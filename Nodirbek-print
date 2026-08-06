@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nodirbek Print — Kirim · Chiqim · Xarajat</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    --bg: #F5F1E8;
+    --paper: #FFFFFF;
+    --ink: #24322A;
+    --ink-soft: #6B7268;
+    --line: #E4DCC9;
+    --green: #2F5D50;
+    --green-soft: #E4EEE9;
+    --gold: #B8863C;
+    --gold-soft: #F5E9D3;
+    --brick: #954A3A;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 84px;
+  }
+  .mono { font-family: 'Consolas', 'Courier New', monospace; }
+  .header { padding: 22px 18px 16px; background: var(--green); color: #F5F1E8; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+  .header h1 { font-weight: 700; font-size: 22px; margin: 0 0 2px; }
+  .header p { margin: 0; font-size: 12.5px; opacity: 0.75; }
+  .content { padding: 16px; max-width: 520px; margin: 0 auto; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; }
+  .stat-card .label { font-size: 11.5px; color: var(--ink-soft); display:flex; align-items:center; gap:5px; margin-bottom: 6px; }
+  .stat-card .value { font-family: 'Consolas', 'Courier New', monospace; font-weight: 700; font-size: 15px; }
+  .stat-card.wide { grid-column: span 2; }
+  .stat-card.accent { background: var(--green); color: #fff; border: none; }
+  .stat-card.accent .label { color: #DCEAE4; }
+  .section-title { font-weight: 700; font-size: 15px; margin: 18px 0 8px; display: flex; align-items: center; gap: 6px; }
+  .warn-box { background: var(--gold-soft); border: 1px solid #E3CB93; border-radius: 12px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 10px; display: flex; gap: 8px; align-items: flex-start; }
+  .warn-box b { font-weight: 700; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+  .form { display: flex; flex-direction: column; gap: 10px; }
+  .form-row { display: flex; gap: 12px; align-items: flex-end; }
+  .form-row-fields { flex: 1; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 11.5px; color: var(--ink-soft); font-weight: 500; }
+  .input { border: 1px solid var(--line); background: #FCFAF4; border-radius: 10px; padding: 9px 11px; font-size: 14px; color: var(--ink); font-family: inherit; outline: none; width: 100%; }
+  .input:focus { border-color: var(--green); }
+  .imgpick { position: relative; border-radius: 12px; border: 1.5px dashed var(--line); background: #FCFAF4; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; cursor: pointer; width: 72px; height: 72px; }
+  .imgpick.small { width: 48px; height: 48px; }
+  .imgpick img { width: 100%; height: 100%; object-fit: cover; }
+  .imgpick-empty { color: var(--ink-soft); font-size: 20px; }
+  .imgpick input { display: none; }
+  .btn { border: none; border-radius: 10px; padding: 11px 14px; font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; font-family: inherit; width: 100%; }
+  .btn-kirim { background: var(--green); }
+  .btn-chiqim { background: var(--gold); }
+  .btn-xarajat { background: var(--brick); }
+  .selected-preview { display: flex; align-items: center; gap: 10px; background: var(--green-soft); border-radius: 10px; padding: 8px 10px; }
+  .selected-name { font-size: 13.5px; font-weight: 700; }
+  .selected-sub { font-size: 11.5px; color: var(--ink-soft); }
+  .warn-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--brick); }
+  .entry { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+  .entry:last-child { border-bottom: none; }
+  .entry-img { width: 38px; height: 38px; border-radius: 9px; background: #F1ECDD; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; color: var(--ink-soft); font-size: 16px; }
+  .entry-img img { width: 100%; height: 100%; object-fit: cover; }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-title { font-size: 13.5px; font-weight: 700; }
+  .entry-sub { font-size: 11.5px; color: var(--ink-soft); }
+  .entry-right { text-align: right; }
+  .entry-amount { font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; font-weight: 700; }
+  .entry-del { background: none; border: none; color: var(--ink-soft); padding: 4px; cursor: pointer; font-size: 15px; }
+  .empty { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 22px 10px; }
+  .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--paper); border-top: 1px solid var(--line); display: flex; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); max-width: 520px; margin: 0 auto; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 2px; background: none; border: none; color: var(--ink-soft); font-size: 10.5px; font-family: inherit; border-radius: 10px; cursor: pointer; }
+  .tab.active { color: var(--green); background: var(--green-soft); }
+  .tab .ic { font-size: 17px; }
+  .toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 30px; font-size: 12.5px; z-index: 50; }
+  @media (min-width: 521px) { .tabbar { border-radius: 16px 16px 0 0; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+"use strict";
+
+var STORAGE_KEY = "ledger-data-v1";
+var CATEGORIES = ["Tovar olib kelish", "Kommunal to'lov", "Soliq to'lov", "Boshqa"];
+
+var state = {
+  products: [],
+  kirimLog: [],
+  chiqimLog: [],
+  xarajatLog: [],
+  tab: "dashboard",
+  toastMsg: "",
+  chiqimSelectedId: "",
+  kirimImage: null,
+  chiqimQtyDraft: ""
+};
+
+function formatSum(n) {
+  var num = Math.round(Number(n) || 0);
+  return num.toLocaleString("uz-UZ") + " so'm";
+}
+function todayLabel() {
+  var d = new Date();
+  var dd = String(d.getDate()).padStart(2, "0");
+  var mm = String(d.getMonth() + 1).padStart(2, "0");
+  return dd + "." + mm + "." + d.getFullYear();
+}
+function uid(prefix) {
+  return prefix + "_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+}
+function esc(s) {
+  var div = document.createElement("div");
+  div.textContent = s == null ? "" : String(s);
+  return div.innerHTML;
+}
+
+function saveState() {
+  try {
+    var data = {
+      products: state.products,
+      kirimLog: state.kirimLog,
+      chiqimLog: state.chiqimLog,
+      xarajatLog: state.xarajatLog
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {}
+}
+function loadState() {
+  try {
+    var raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      var data = JSON.parse(raw);
+      state.products = data.products || [];
+      state.kirimLog = data.kirimLog || [];
+      state.chiqimLog = data.chiqimLog || [];
+      state.xarajatLog = data.xarajatLog || [];
+    }
+  } catch (e) {}
+}
+
+function resizeImage(file, maxDim, cb) {
+  maxDim = maxDim || 480;
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var img = new Image();
+    img.onload = function () {
+      var width = img.width, height = img.height;
+      if (width > height && width > maxDim) {
+        height = Math.round(height * (maxDim / width));
+        width = maxDim;
+      } else if (height >= width && height > maxDim) {
+        width = Math.round(width * (maxDim / height));
+        height = maxDim;
+      }
+      var canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      cb(canvas.toDataURL("image/jpeg", 0.75));
+    };
+    img.onerror = function () { cb(null); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function () { cb(null); };
+  reader.readAsDataURL(file);
+}
+
+function showToast(msg) {
+  state.toastMsg = msg;
+  render();
+  setTimeout(function () {
+    state.toastMsg = "";
+    render();
+  }, 1800);
+}
+
+// ---- actions ----
+function addKirim(name, price, qty, image) {
+  var trimmed = (name || "").trim();
+  if (!trimmed || !price || !qty) return;
+  var existing = null;
+  for (var i = 0; i < state.products.length; i++) {
+    if (state.products[i].name.toLowerCase() === trimmed.toLowerCase()) { existing = state.products[i]; break; }
+  }
+  var productId;
+  if (existing) {
+    productId = existing.id;
+    existing.qty = existing.qty + Number(qty);
+    existing.price = Number(price);
+    if (image) existing.image = image;
+  } else {
+    productId = uid("p");
+    state.products.push({ id: productId, name: trimmed, price: Number(price), qty: Number(qty), image: image || null });
+  }
+  state.kirimLog.unshift({
+    id: uid("k"), productId: productId, name: trimmed,
+    image: image || (existing ? existing.image : null),
+    price: Number(price), qty: Number(qty), date: todayLabel()
+  });
+  saveState();
+  showToast("Kirim qo'shildi");
+}
+
+function addChiqim(productId, qty, summa) {
+  var product = null;
+  for (var i = 0; i < state.products.length; i++) { if (state.products[i].id === productId) { product = state.products[i]; break; } }
+  if (!product || !qty || !summa) return;
+  var q = Number(qty);
+  product.qty = Math.max(0, product.qty - q);
+  state.chiqimLog.unshift({
+    id: uid("c"), productId: productId, name: product.name, image: product.image,
+    qty: q, summa: Number(summa), costAtSale: product.price, date: todayLabel()
+  });
+  saveState();
+  showToast("Chiqim qo'shildi");
+}
+
+function addXarajat(category, summa, note) {
+  if (!summa) return;
+  state.xarajatLog.unshift({ id: uid("x"), category: category, summa: Number(summa), note: note || "", date: todayLabel() });
+  saveState();
+  showToast("Xarajat qo'shildi");
+}
+
+function removeEntry(type, id) {
+  if (type === "kirim") {
+    var entry = state.kirimLog.find(function (e) { return e.id === id; });
+    if (entry) {
+      var p = state.products.find(function (p) { return p.id === entry.productId; });
+      if (p) p.qty = Math.max(0, p.qty - entry.qty);
+    }
+    state.kirimLog = state.kirimLog.filter(function (e) { return e.id !== id; });
+  } else if (type === "chiqim") {
+    var entry2 = state.chiqimLog.find(function (e) { return e.id === id; });
+    if (entry2) {
+      var p2 = state.products.find(function (p) { return p.id === entry2.productId; });
+      if (p2) p2.qty = p2.qty + entry2.qty;
+    }
+    state.chiqimLog = state.chiqimLog.filter(function (e) { return e.id !== id; });
+  } else if (type === "xarajat") {
+    state.xarajatLog = state.xarajatLog.filter(function (e) { return e.id !== id; });
+  }
+  saveState();
+  render();
+}
+
+// ---- render helpers ----
+function entryRowHTML(opts) {
+  var imgHTML = "";
+  if (opts.hasImage) {
+    imgHTML = '<div class="entry-img">' + (opts.image ? '<img src="' + opts.image + '" alt="" />' : "📦") + "</div>";
+  }
+  return (
+    '<div class="entry">' +
+      imgHTML +
+      '<div class="entry-body"><div class="entry-title">' + esc(opts.title) + '</div><div class="entry-sub">' + esc(opts.sub) + "</div></div>" +
+      '<div class="entry-right"><div class="entry-amount">' + esc(opts.right) + "</div></div>" +
+      '<button class="entry-del" data-action="delete" data-type="' + opts.type + '" data-id="' + opts.id + '">🗑</button>' +
+    "</div>"
+  );
+}
+
+function renderDashboard() {
+  var totalSotuv = state.chiqimLog.reduce(function (s, e) { return s + e.summa; }, 0);
+  var totalCOGS = state.chiqimLog.reduce(function (s, e) { return s + e.qty * e.costAtSale; }, 0);
+  var totalXarajat = state.xarajatLog.reduce(function (s, e) { return s + e.summa; }, 0);
+  var totalKirimQiymati = state.kirimLog.reduce(function (s, e) { return s + e.qty * e.price; }, 0);
+  var omborQiymati = state.products.reduce(function (s, p) { return s + p.qty * p.price; }, 0);
+  var yalpiFoyda = totalSotuv - totalCOGS;
+  var sofFoyda = yalpiFoyda - totalXarajat;
+  var kamQolgan = state.products.filter(function (p) { return p.qty <= 3 && p.qty > 0; });
+  var tugagan = state.products.filter(function (p) { return p.qty <= 0; });
+
+  var warnHTML = "";
+  if (kamQolgan.length > 0 || tugagan.length > 0) {
+    var parts = "";
+    if (tugagan.length > 0) parts += "<b>" + esc(tugagan.map(function (p) { return p.name; }).join(", ")) + "</b> tugagan. ";
+    if (kamQolgan.length > 0) parts += "<b>" + esc(kamQolgan.map(function (p) { return p.name; }).join(", ")) + "</b> kam qoldi.";
+    warnHTML = '<div class="warn-box">⚠ <span>' + parts + "</span></div>";
+  }
+
+  var productsHTML = "";
+  if (state.products.length === 0) {
+    productsHTML = '<div class="empty">Hali tovar qo\'shilmagan. Kirim bo\'limidan boshlang.</div>';
+  } else {
+    state.products.forEach(function (p) {
+      productsHTML += entryRowHTML({
+        hasImage: true, image: p.image, title: p.name,
+        sub: "Tannarx: " + formatSum(p.price), right: p.qty + " dona",
+        type: "product-noop", id: p.id
+      });
+    });
+    productsHTML = productsHTML.replace(/<button class="entry-del"[^>]*>🗑<\/button>/g, "");
+  }
+
+  return (
+    '<div class="stat-grid">' +
+      '<div class="stat-card accent wide"><div class="label">💰 Sof foyda</div><div class="value">' + formatSum(sofFoyda) + "</div></div>" +
+      '<div class="stat-card"><div class="label">📈 Sotuv (chiqim)</div><div class="value">' + formatSum(totalSotuv) + "</div></div>" +
+      '<div class="stat-card"><div class="label">📉 Xarajatlar</div><div class="value">' + formatSum(totalXarajat) + "</div></div>" +
+      '<div class="stat-card"><div class="label">⬇ Kirim qiymati</div><div class="value">' + formatSum(totalKirimQiymati) + "</div></div>" +
+      '<div class="stat-card"><div class="label">📦 Ombor qiymati</div><div class="value">' + formatSum(omborQiymati) + "</div></div>" +
+    "</div>" +
+    warnHTML +
+    '<div class="section-title">📦 Tovarlar ombori</div>' +
+    '<div class="card" style="padding:6px">' + productsHTML + "</div>"
+  );
+}
+
+function renderKirim() {
+  var logHTML = "";
+  if (state.kirimLog.length === 0) {
+    logHTML = '<div class="empty">Hali kirim kiritilmagan.</div>';
+  } else {
+    state.kirimLog.forEach(function (e) {
+      logHTML += entryRowHTML({
+        hasImage: true, image: e.image, title: e.name,
+        sub: e.qty + " dona × " + formatSum(e.price) + " · " + e.date,
+        right: formatSum(e.qty * e.price), type: "kirim", id: e.id
+      });
+    });
+  }
+  var imgPreview = state.kirimImage ? '<img src="' + state.kirimImage + '" alt="" />' : '<span class="imgpick-empty">🖼</span>';
+  return (
+    '<form class="card form" id="kirim-form">' +
+      '<div class="form-row">' +
+        '<label class="imgpick" id="kirim-imgpick">' + imgPreview + '<input type="file" accept="image/*" id="kirim-image-input" /></label>' +
+        '<div class="form-row-fields"><div class="field"><span class="field-label">Tovar nomi</span>' +
+          '<input class="input" placeholder="Masalan: Choy Beeta" id="kirim-name" /></div></div>' +
+      "</div>" +
+      '<div class="form-grid-2">' +
+        '<div class="field"><span class="field-label">Narxi (tannarx)</span><input class="input mono" type="number" inputmode="decimal" placeholder="0" id="kirim-price" /></div>' +
+        '<div class="field"><span class="field-label">Soni</span><input class="input mono" type="number" inputmode="numeric" placeholder="0" id="kirim-qty" /></div>' +
+      "</div>" +
+      '<button class="btn btn-kirim" type="submit">⬇ Kirimga qo\'shish</button>' +
+    "</form>" +
+    '<div class="section-title">Kirim tarixi</div>' +
+    '<div class="card" style="padding:6px">' + logHTML + "</div>"
+  );
+}
+
+function renderChiqim() {
+  var formHTML;
+  if (state.products.length === 0) {
+    formHTML = '<div class="warn-box">⚠ <span>Avval Kirim bo\'limidan tovar qo\'shing, keyin chiqim kiritishingiz mumkin.</span></div>';
+  } else {
+    var options = '<option value="">— tovar tanlang —</option>';
+    state.products.forEach(function (p) {
+      var sel = p.id === state.chiqimSelectedId ? " selected" : "";
+      options += '<option value="' + p.id + '"' + sel + ">" + esc(p.name) + " (qoldiq: " + p.qty + ")</option>";
+    });
+    var selected = state.products.find(function (p) { return p.id === state.chiqimSelectedId; });
+    var previewHTML = "";
+    if (selected) {
+      previewHTML =
+        '<div class="selected-preview">' +
+          '<div class="imgpick small">' + (selected.image ? '<img src="' + selected.image + '" alt="" />' : '<span class="imgpick-empty" style="font-size:14px">🖼</span>') + "</div>" +
+          '<div><div class="selected-name">' + esc(selected.name) + '</div><div class="selected-sub">Qoldiq: ' + selected.qty + " dona · Tannarx: " + formatSum(selected.price) + "</div></div>" +
+        "</div>";
+    }
+    var warnLine = "";
+    var qtyVal = state.chiqimQtyDraft;
+    if (selected && qtyVal && Number(qtyVal) > selected.qty) {
+      warnLine = '<div class="warn-line">⚠ Omborda yetarli tovar yo\'q (' + selected.qty + " dona qoldi)</div>";
+    }
+    formHTML =
+      '<form class="card form" id="chiqim-form">' +
+        '<div class="field"><span class="field-label">Tovarni tanlang</span><select class="input" id="chiqim-product">' + options + "</select></div>" +
+        previewHTML +
+        '<div class="form-grid-2">' +
+          '<div class="field"><span class="field-label">Soni</span><input class="input mono" type="number" inputmode="numeric" placeholder="0" id="chiqim-qty" value="' + esc(qtyVal) + '" /></div>' +
+          '<div class="field"><span class="field-label">Summasi</span><input class="input mono" type="number" inputmode="decimal" placeholder="0" id="chiqim-summa" /></div>' +
+        "</div>" +
+        warnLine +
+        '<button class="btn btn-chiqim" type="submit">⬆ Chiqimga qo\'shish</button>' +
+      "</form>";
+  }
+
+  var logHTML = "";
+  if (state.chiqimLog.length === 0) {
+    logHTML = '<div class="empty">Hali chiqim kiritilmagan.</div>';
+  } else {
+    state.chiqimLog.forEach(function (e) {
+      logHTML += entryRowHTML({
+        hasImage: true, image: e.image, title: e.name,
+        sub: e.qty + " dona · " + e.date, right: formatSum(e.summa),
+        type: "chiqim", id: e.id
+      });
+    });
+  }
+
+  return formHTML + '<div class="section-title">Chiqim tarixi</div><div class="card" style="padding:6px">' + logHTML + "</div>";
+}
+
+function renderXarajat() {
+  var catOptions = "";
+  CATEGORIES.forEach(function (c) { catOptions += '<option value="' + esc(c) + '">' + esc(c) + "</option>"; });
+
+  var logHTML = "";
+  if (state.xarajatLog.length === 0) {
+    logHTML = '<div class="empty">Hali xarajat kiritilmagan.</div>';
+  } else {
+    state.xarajatLog.forEach(function (e) {
+      logHTML += entryRowHTML({
+        hasImage: false, title: e.category,
+        sub: (e.note ? e.note + " · " : "") + e.date, right: formatSum(e.summa),
+        type: "xarajat", id: e.id
+      });
+    });
+  }
+
+  return (
+    '<form class="card form" id="xarajat-form">' +
+      '<div class="field"><span class="field-label">Xarajat turi</span><select class="input" id="xarajat-category">' + catOptions + "</select></div>" +
+      '<div class="form-grid-2">' +
+        '<div class="field"><span class="field-label">Summasi</span><input class="input mono" type="number" inputmode="decimal" placeholder="0" id="xarajat-summa" /></div>' +
+        '<div class="field"><span class="field-label">Izoh (ixtiyoriy)</span><input class="input" placeholder="Masalan: dekabr oyi" id="xarajat-note" /></div>' +
+      "</div>" +
+      '<button class="btn btn-xarajat" type="submit">🧾 Xarajatga qo\'shish</button>' +
+    "</form>" +
+    '<div class="section-title">Xarajatlar tarixi</div>' +
+    '<div class="card" style="padding:6px">' + logHTML + "</div>"
+  );
+}
+
+var TABS = [
+  { id: "dashboard", label: "Bosh sahifa", ic: "🏠" },
+  { id: "kirim", label: "Kirim", ic: "⬇" },
+  { id: "chiqim", label: "Chiqim", ic: "⬆" },
+  { id: "xarajat", label: "Xarajat", ic: "🧾" }
+];
+
+function render() {
+  var content = "";
+  if (state.tab === "dashboard") content = renderDashboard();
+  else if (state.tab === "kirim") content = renderKirim();
+  else if (state.tab === "chiqim") content = renderChiqim();
+  else if (state.tab === "xarajat") content = renderXarajat();
+
+  var tabsHTML = "";
+  TABS.forEach(function (t) {
+    tabsHTML += '<button class="tab' + (state.tab === t.id ? " active" : "") + '" data-tab="' + t.id + '"><span class="ic">' + t.ic + "</span>" + t.label + "</button>";
+  });
+
+  var html =
+    '<div class="header"><h1>Nodirbek Print</h1><p>Kirim · Chiqim · Xarajat — ' + todayLabel() + "</p></div>" +
+    '<div class="content">' + content + "</div>" +
+    (state.toastMsg ? '<div class="toast">' + esc(state.toastMsg) + "</div>" : "") +
+    '<div class="tabbar">' + tabsHTML + "</div>";
+
+  document.getElementById("root").innerHTML = html;
+  attachHandlers();
+}
+
+function attachHandlers() {
+  // tab bar
+  document.querySelectorAll("[data-tab]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.tab = btn.getAttribute("data-tab");
+      if (state.tab !== "chiqim") { state.chiqimQtyDraft = ""; }
+      render();
+    });
+  });
+
+  // delete buttons
+  document.querySelectorAll('[data-action="delete"]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      removeEntry(btn.getAttribute("data-type"), btn.getAttribute("data-id"));
+    });
+  });
+
+  // kirim form
+  var kirimForm = document.getElementById("kirim-form");
+  if (kirimForm) {
+    var imgInput = document.getElementById("kirim-image-input");
+    imgInput.addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      resizeImage(file, 480, function (dataUrl) {
+        state.kirimImage = dataUrl;
+        render();
+      });
+    });
+    kirimForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var name = document.getElementById("kirim-name").value;
+      var price = document.getElementById("kirim-price").value;
+      var qty = document.getElementById("kirim-qty").value;
+      addKirim(name, price, qty, state.kirimImage);
+      state.kirimImage = null;
+      render();
+    });
+  }
+
+  // chiqim form
+  var chiqimForm = document.getElementById("chiqim-form");
+  if (chiqimForm) {
+    var productSelect = document.getElementById("chiqim-product");
+    productSelect.addEventListener("change", function () {
+      state.chiqimSelectedId = productSelect.value;
+      render();
+    });
+    var qtyInput = document.getElementById("chiqim-qty");
+    qtyInput.addEventListener("input", function () {
+      state.chiqimQtyDraft = qtyInput.value;
+      render();
+    });
+    chiqimForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var productId = document.getElementById("chiqim-product").value;
+      var qty = document.getElementById("chiqim-qty").value;
+      var summa = document.getElementById("chiqim-summa").value;
+      addChiqim(productId, qty, summa);
+      state.chiqimSelectedId = "";
+      state.chiqimQtyDraft = "";
+      render();
+    });
+  }
+
+  // xarajat form
+  var xarajatForm = document.getElementById("xarajat-form");
+  if (xarajatForm) {
+    xarajatForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var category = document.getElementById("xarajat-category").value;
+      var summa = document.getElementById("xarajat-summa").value;
+      var note = document.getElementById("xarajat-note").value;
+      addXarajat(category, summa, note);
+      render();
+    });
+  }
+}
+
+loadState();
+render();
+
+// --- Telegram Mini App integration (safe no-op if opened outside Telegram) ---
+(function () {
+  try {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (!tg) return;
+    tg.ready();
+    tg.expand();
+    if (tg.setHeaderColor) { try { tg.setHeaderColor("#2F5D50"); } catch (e) {} }
+    if (tg.setBackgroundColor) { try { tg.setBackgroundColor("#F5F1E8"); } catch (e) {} }
+    if (tg.enableClosingConfirmation) { try { tg.enableClosingConfirmation(); } catch (e) {} }
+  } catch (e) {}
+})();
+
+</script>
+</body>
+</html>
