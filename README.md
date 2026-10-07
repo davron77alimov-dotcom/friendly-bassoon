@@ -6,8 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
-8628036278:AAF9CrHBeyJ6Yrp-tRRB2RTcyrpc4OTjxqo
-BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+https://t.me/Kanstavarbot
 
 class ResumeForm(StatesGroup):
     full_name = State()
