@@ -6,14 +6,15 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
-https://t.me/Kanstavarbot
+8628036278:AAHHOVlMGu6K_l4P4izcE1uBk5Ul4yjAHg4
+
 
 class ResumeForm(StatesGroup):
     full_name = State()
     phone = State()
     profession = State()
-    experience = State()
     skills = State()
+    experience = State()
     education = State()
 
 bot = Bot(token=BOT_TOKEN)
@@ -52,7 +53,7 @@ async def get_phone(message: Message, state: FSMContext):
 @dp.message(ResumeForm.profession)
 async def get_profession(message: Message, state: FSMContext):
     await state.update_data(profession=message.text)
-    await message.answer("🛠 **Ko'nikmalaringiz va biladigan dasturlaringizni** yozing:\n*(Masalan: Excel, Python, Git, Muloqotchanlik)*")
+    await message.answer("🛠 **Ko'nikmalaringiz va biladigan dasturlaringizni** yozing:\n*(Masalan: Excel, Python, Git)*")
     await state.set_state(ResumeForm.skills)
 
 @dp.message(ResumeForm.skills)
